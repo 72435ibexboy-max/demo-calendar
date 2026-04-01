@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>デモ機管理カレンダー</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #1a56db;
+      --primary-light: #e8f0fe;
+      --success: #0e9f6e;
+      --danger: #e02424;
+      --warning: #ff8800;
+      --bg: #f4f6fb;
+      --white: #ffffff;
+      --border: #e2e8f0;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+      --radius: 10px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Noto Sans JP', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* ===== HEADER ===== */
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    header h1 { font-size: 16px; font-weight: 700; }
+    #userInfo { font-size: 12px; opacity: 0.9; display: flex; align-items: center; gap: 8px; }
+    #logoutBtn {
+      background: rgba(255,255,255,0.2);
+      border: none;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-family: inherit;
+    }
+    #logoutBtn:hover { background: rgba(255,255,255,0.3); }
+
+    /* ===== LOGIN ===== */
+    #loginScreen {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .login-card {
+      background: white;
+      border-radius: 16px;
+      padding: 40px 32px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    }
+    .login-card h2 { font-size: 22px; margin-bottom: 8px; color: var(--primary); }
+    .login-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 28px; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    .form-group input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus { border-color: var(--primary); }
+    .btn-primary {
+      width: 100%;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 8px;
+    }
+    .btn-primary:hover { background: #1648c0; }
+    #loginError { color: var(--danger); font-size: 13px; margin-top: 10px; text-align: center; }
+    .login-toggle { text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+    .login-toggle a { color: var(--primary); cursor: pointer; text-decoration: underline; }
+
+    /* ===== MAIN APP ===== */
+    #appScreen { display: none; }
+
+    /* ===== WEEK NAV ===== */
+    .week-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: white;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 50px;
+      z-index: 90;
+    }
+    .week-nav button {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: none;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .week-nav button:hover { background: #d0e0fc; }
+    #weekLabel { font-size: 14px; font-weight: 700; }
+    #todayBtn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* ===== CALENDAR TABLE ===== */
+    .calendar-wrap { overflow-x: auto; padding: 12px; }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    thead th {
+      background: var(--primary);
+      color: white;
+      padding: 8px 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+      position: sticky;
+      top: 0;
+    }
+    thead th:first-child { text-align: left; padding-left: 10px; min-width: 110px; background: #0f3a9e; }
+    tbody tr:nth-child(odd) { background: #fafbff; }
+    tbody tr:nth-child(even) { background: white; }
+    tbody tr:hover { background: var(--primary-light); }
+    td {
+      border: 1px solid var(--border);
+      padding: 0;
+      vertical-align: middle;
+    }
+    .device-name {
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .device-info-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 2px;
+      line-height: 1;
+    }
+    .device-info-btn:hover { color: var(--primary); }
+
+    /* ===== SLOT ===== */
+    .slot {
+      padding: 4px 6px;
+      min-height: 42px;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slot:hover { background: #e8f0fe; }
+    .slot.booked {
+      background: #fee2e2;
+      cursor: pointer;
+    }
+    .slot.booked:hover { background: #fecaca; }
+    .slot-content {
+      font-size: 11px;
+      text-align: center;
+      font-weight: 600;
+      color: var(--danger);
+      word-break: break-all;
+      line-height: 1.3;
+    }
+    .slot.empty .slot-content { color: #b0bec5; font-weight: 400; }
+    .slot-am-pm {
+      position: absolute;
+      top: 2px;
+      left: 4px;
+      font-size: 9px;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    /* ===== SLOT GROUP (AM/PM in one cell group) ===== */
+    .slot-group { display: flex; flex-direction: column; }
+    .slot-divider { border-top: 1px dashed #e2e8f0; }
+
+    /* ===== MODAL ===== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 200;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.active { display: flex; }
+    .modal {
+      background: white;
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 32px;
+      width: 100%;
+      max-width: 480px;
+      animation: slideUp 0.25s ease;
+    }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .modal h3 { font-size: 16px; margin-bottom: 4px; }
+    .modal .modal-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
+    .modal input[type=text] {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      outline: none;
+      margin-bottom: 12px;
+    }
+    .modal input[type=text]:focus { border-color: var(--primary); }
+    .quick-names { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+    .quick-name {
+      background: var(--primary-light);
+      color: var(--primary);
+      border: none;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .quick-name:hover { background: #d0e0fc; }
+    .modal-actions { display: flex; gap: 10px; }
+    .btn-save {
+      flex: 1;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .btn-save:hover { background: #1648c0; }
+    .btn-delete {
+      background: #fee2e2;
+      color: var(--danger);
+      border: none;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+    }
+    .btn-delete:hover { background: #fecaca; }
+    .btn-cancel {
+      background: var(--bg);
+      color: var(--text-muted);
+      border: none;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    /* ===== DEVICE INFO MODAL ===== */
+    .device-modal {
+      border-radius: 20px 20px 0 0;
+      padding: 24px 20px 32px;
+    }
+    .device-modal h3 { font-size: 18px; margin-bottom: 16px; }
+    .device-modal .field { margin-bottom: 14px; }
+    .device-modal label { font-size: 12px; color: var(--text-muted); font-weight: 700; display: block; margin-bottom: 4px; }
+    .device-modal input, .device-modal textarea, .device-modal select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+    .device-modal textarea { resize: vertical; min-height: 60px; }
+    .device-modal input:focus, .device-modal textarea:focus { border-color: var(--primary); }
+
+    /* ===== LOADING ===== */
+    #loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .spinner {
+      width: 20px; height: 20px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin-right: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== DAY HEADER ===== */
+    .day-header { font-size: 11px; }
+    .day-name { font-size: 13px; font-weight: 700; }
+    .today-col { background: #1a3fa8 !important; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 480px) {
+      .device-name { font-size: 11px; padding: 6px 6px; }
+      thead th:first-child { min-width: 80px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>📋 デモ機管理</h2>
+    <p>ログインして予約を管理できます</p>
+    <div id="loginForm">
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="loginEmail" placeholder="example@company.com" />
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="loginPassword" placeholder="パスワード" />
+      </div>
+      <button class="btn-primary" onclick="login()">ログイン</button>
+      <p id="loginError"></p>
+      <div class="login-toggle">アカウントがない場合は <a onclick="showRegister()">新規登録</a></div>
+    </div>
+    <div id="registerForm" style="display:none">
+      <div class="form-group">
+        <label>お名前（表示名）</label>
+        <input type="text" id="regName" placeholder="山田 太郎" />
+      </div>
+      <div class="form-group">
+        <label>メールアドレス</label>
+        <input type="email" id="regEmail" placeholder="example@company.com" />
+      </div>
+      <div class="form-group">
+        <label>パスワード</label>
+        <input type="password" id="regPassword" placeholder="6文字以上" />
+      </div>
+      <button class="btn-primary" onclick="register()">登録してログイン</button>
+      <p id="loginError2"></p>
+      <div class="login-toggle"><a onclick="showLogin()">ログインに戻る</a></div>
+    </div>
+  </div>
+</div>
+
+<!-- APP SCREEN -->
+<div id="appScreen">
+  <header>
+    <h1>📋 デモ機管理カレンダー</h1>
+    <div id="userInfo">
+      <span id="userName"></span>
+      <button id="logoutBtn" onclick="logout()">ログアウト</button>
+    </div>
+  </header>
+
+  <div class="week-nav">
+    <button onclick="changeWeek(-1)">‹</button>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span id="weekLabel"></span>
+      <button id="todayBtn" onclick="goToday()">今週</button>
+    </div>
+    <button onclick="changeWeek(1)">›</button>
+  </div>
+
+  <div class="calendar-wrap">
+    <div id="loading"><div class="spinner"></div>読み込み中...</div>
+    <table id="calTable" style="display:none">
+      <thead id="calHead"></thead>
+      <tbody id="calBody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- BOOKING MODAL -->
+<div class="modal-overlay" id="bookingModal">
+  <div class="modal">
+    <h3 id="modalTitle"></h3>
+    <p class="modal-sub" id="modalSub"></p>
+    <input type="text" id="bookingName" placeholder="名前または用途を入力" />
+    <div class="quick-names" id="quickNames"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">キャンセル</button>
+      <button class="btn-delete" id="deleteBtn" onclick="deleteBooking()" style="display:none">削除</button>
+      <button class="btn-save" onclick="saveBooking()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- DEVICE INFO MODAL -->
+<div class="modal-overlay" id="deviceModal">
+  <div class="modal device-modal">
+    <h3 id="deviceModalTitle"></h3>
+    <div class="field">
+      <label>シリアル番号</label>
+      <input type="text" id="devSerial" placeholder="シリアル番号" />
+    </div>
+    <div class="field">
+      <label>Excel</label>
+      <select id="devExcel">
+        <option value="">未設定</option>
+        <option value="あり">あり</option>
+        <option value="なし">なし</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>備考</label>
+      <textarea id="devNote" placeholder="備考を入力"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeDeviceModal()">閉じる</button>
+      <button class="btn-save" onclick="saveDeviceInfo()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyB1RkuJyX7A2WTepnUT1yTCkrfXaNFvGI8",
+    authDomain: "fir-calendar-e69e3.firebaseapp.com",
+    projectId: "fir-calendar-e69e3",
+    storageBucket: "fir-calendar-e69e3.firebasestorage.app",
+    messagingSenderId: "906734506706",
+    appId: "1:906734506706:web:d2673c9ef02970e943d30b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // ===== DEVICES =====
+  const DEVICES = [
+    "証憑セット①","証憑セット②","IR70","IR60","ハンディ",
+    "G-stepNX9","WORK14","NX9仮想1","NX9仮想2","NX9仮想3","NX9仮想4","NX9仮想5",
+    "G-stepNX7","NX7仮想1","NX7仮想2",
+    "G-stepNX5","G-stepNX3","G-stepNX1","STG-stepNX",
+    "WORK14(2)","LibertyNX300","LibertyNX200","LibertyNX100",
+    "LibertyAISTATION","AI WORK②(1)","AI WORK②(2)","マルチモニター"
+  ];
+
+  const QUICK_OPTIONS = ["講習","展示会","外部貸出","メンテナンス"];
+
+  let currentUser = null;
+  let currentUserName = "";
+  let weekOffset = 0;
+  let bookings = {};
+  let deviceInfos = {};
+  let currentSlot = null;
+
+  // ===== UTILS =====
+  function getMondayOfWeek(offset = 0) {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = day === 0 ? -6 : 1 - day;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diff + offset * 7);
+    monday.setHours(0,0,0,0);
+    return monday;
+  }
+
+  function getWeekDays(offset = 0) {
+    const monday = getMondayOfWeek(offset);
+    return Array.from({length:5}, (_,i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      return d;
+    });
+  }
+
+  function formatDate(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
+  function isToday(d) {
+    const t = new Date();
+    return d.getFullYear()===t.getFullYear() && d.getMonth()===t.getMonth() && d.getDate()===t.getDate();
+  }
+
+  function slotKey(device, date, ampm) {
+    return `${device}__${date}__${ampm}`;
+  }
+
+  // ===== LOAD BOOKINGS =====
+  async function loadBookings() {
+    const days = getWeekDays(weekOffset);
+    const start = formatDate(days[0]);
+    const end = formatDate(days[4]);
+    bookings = {};
+    const snap = await getDocs(collection(db, "bookings"));
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      if (data.date >= start && data.date <= end) {
+        bookings[docSnap.id] = data;
+      }
+    });
+  }
+
+  async function loadDeviceInfos() {
+    deviceInfos = {};
+    const snap = await getDocs(collection(db, "devices"));
+    snap.forEach(docSnap => {
+      deviceInfos[docSnap.id] = docSnap.data();
+    });
+  }
+
+  // ===== RENDER =====
+  function renderCalendar() {
+    const days = getWeekDays(weekOffset);
+    const DAY_NAMES = ["月","火","水","木","金"];
+
+    // Week label
+    const start = days[0];
+    const end = days[4];
+    document.getElementById("weekLabel").textContent =
+      `${start.getMonth()+1}/${start.getDate()} 〜 ${end.getMonth()+1}/${end.getDate()}`;
+
+    // Header
+    const head = document.getElementById("calHead");
+    head.innerHTML = "";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<th>デモ機</th>` + days.map((d,i) => {
+      const today = isToday(d) ? " today-col" : "";
+      return `<th class="${today}" colspan="2">
+        <div class="day-name">${DAY_NAMES[i]}</div>
+        <div class="day-header">${d.getMonth()+1}/${d.getDate()}</div>
+      </th>`;
+    }).join("");
+    head.appendChild(tr);
+
+    // AM/PM sub-header
+    const tr2 = document.createElement("tr");
+    tr2.innerHTML = `<th style="background:#0f3a9e;font-size:10px;">　</th>` + days.map(d => {
+      const today = isToday(d) ? " today-col" : "";
+      return `<th class="${today}" style="font-size:10px;font-weight:500;">午前</th><th class="${today}" style="font-size:10px;font-weight:500;">午後</th>`;
+    }).join("");
+    head.appendChild(tr2);
+
+    // Body
+    const body = document.getElementById("calBody");
+    body.innerHTML = "";
+    DEVICES.forEach(device => {
+      const tr = document.createElement("tr");
+      let html = `<td><div class="device-name">${device}<button class="device-info-btn" title="機器情報" onclick="openDeviceModal('${device}')">ℹ️</button></div></td>`;
+      days.forEach(d => {
+        const dateStr = formatDate(d);
+        ["AM","PM"].forEach(ampm => {
+          const key = slotKey(device, dateStr, ampm);
+          const booking = Object.values(bookings).find(b => b.device===device && b.date===dateStr && b.ampm===ampm);
+          const name = booking ? booking.name : "";
+          const booked = !!name;
+          html += `<td>
+            <div class="slot ${booked?'booked':'empty'}" onclick="openBooking('${device}','${dateStr}','${ampm}')">
+              <div class="slot-content">${booked ? name : "+"}</div>
+            </div>
+          </td>`;
+        });
+      });
+      tr.innerHTML = html;
+      body.appendChild(tr);
+    });
+
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("calTable").style.display = "";
+  }
+
+  // ===== BOOKING MODAL =====
+  window.openBooking = function(device, date, ampm) {
+    currentSlot = {device, date, ampm};
+    const booking = Object.values(bookings).find(b => b.device===device && b.date===date && b.ampm===ampm);
+    const d = new Date(date + "T00:00:00");
+    const DAY_NAMES = ["日","月","火","水","木","金","土"];
+    document.getElementById("modalTitle").textContent = `${device} - ${ampm==="AM"?"午前":"午後"}`;
+    document.getElementById("modalSub").textContent = `${d.getMonth()+1}/${d.getDate()}（${DAY_NAMES[d.getDay()]}）`;
+    document.getElementById("bookingName").value = booking ? booking.name : currentUserName;
+
+    // Quick options
+    const qn = document.getElementById("quickNames");
+    qn.innerHTML = "";
+    const opts = [currentUserName, ...QUICK_OPTIONS].filter((v,i,a)=>a.indexOf(v)===i);
+    opts.forEach(opt => {
+      const btn = document.createElement("button");
+      btn.className = "quick-name";
+      btn.textContent = opt;
+      btn.onclick = () => { document.getElementById("bookingName").value = opt; };
+      qn.appendChild(btn);
+    });
+
+    document.getElementById("deleteBtn").style.display = booking ? "" : "none";
+    document.getElementById("bookingModal").classList.add("active");
+    setTimeout(()=>document.getElementById("bookingName").focus(), 100);
+  };
+
+  window.closeModal = function() {
+    document.getElementById("bookingModal").classList.remove("active");
+    currentSlot = null;
+  };
+
+  window.saveBooking = async function() {
+    const name = document.getElementById("bookingName").value.trim();
+    if (!name) { alert("名前または用途を入力してください"); return; }
+    const {device, date, ampm} = currentSlot;
+    const key = slotKey(device, date, ampm);
+    await setDoc(doc(db, "bookings", key), {device, date, ampm, name, uid: currentUser.uid});
+    closeModal();
+    await loadBookings();
+    renderCalendar();
+  };
+
+  window.deleteBooking = async function() {
+    if (!confirm("予約を削除しますか？")) return;
+    const {device, date, ampm} = currentSlot;
+    const key = slotKey(device, date, ampm);
+    await deleteDoc(doc(db, "bookings", key));
+    closeModal();
+    await loadBookings();
+    renderCalendar();
+  };
+
+  // ===== DEVICE INFO MODAL =====
+  window.openDeviceModal = function(device) {
+    document.getElementById("deviceModalTitle").textContent = `📦 ${device}`;
+    const info = deviceInfos[device] || {};
+    document.getElementById("devSerial").value = info.serial || "";
+    document.getElementById("devExcel").value = info.excel || "";
+    document.getElementById("devNote").value = info.note || "";
+    document.getElementById("deviceModal").classList.add("active");
+    window._editingDevice = device;
+  };
+
+  window.closeDeviceModal = function() {
+    document.getElementById("deviceModal").classList.remove("active");
+  };
+
+  window.saveDeviceInfo = async function() {
+    const device = window._editingDevice;
+    const data = {
+      serial: document.getElementById("devSerial").value,
+      excel: document.getElementById("devExcel").value,
+      note: document.getElementById("devNote").value,
+    };
+    await setDoc(doc(db, "devices", device), data);
+    deviceInfos[device] = data;
+    closeDeviceModal();
+    alert("保存しました");
+  };
+
+  // ===== WEEK NAV =====
+  window.changeWeek = async function(dir) {
+    weekOffset += dir;
+    document.getElementById("loading").style.display = "flex";
+    document.getElementById("calTable").style.display = "none";
+    await loadBookings();
+    renderCalendar();
+  };
+
+  window.goToday = async function() {
+    weekOffset = 0;
+    document.getElementById("loading").style.display = "flex";
+    document.getElementById("calTable").style.display = "none";
+    await loadBookings();
+    renderCalendar();
+  };
+
+  // ===== AUTH =====
+  window.login = async function() {
+    const email = document.getElementById("loginEmail").value;
+    const password = document.getElementById("loginPassword").value;
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch(e) {
+      document.getElementById("loginError").textContent = "メールアドレスまたはパスワードが違います";
+    }
+  };
+
+  window.register = async function() {
+    const name = document.getElementById("regName").value.trim();
+    const email = document.getElementById("regEmail").value;
+    const password = document.getElementById("regPassword").value;
+    if (!name) { document.getElementById("loginError2").textContent = "お名前を入力してください"; return; }
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(cred.user, {displayName: name});
+    } catch(e) {
+      document.getElementById("loginError2").textContent = "登録に失敗しました: " + e.message;
+    }
+  };
+
+  window.logout = function() {
+    signOut(auth);
+  };
+
+  window.showRegister = function() {
+    document.getElementById("loginForm").style.display = "none";
+    document.getElementById("registerForm").style.display = "";
+  };
+
+  window.showLogin = function() {
+    document.getElementById("registerForm").style.display = "none";
+    document.getElementById("loginForm").style.display = "";
+  };
+
+  // ===== AUTH STATE =====
+  onAuthStateChanged(auth, async (user) => {
+    if (user) {
+      currentUser = user;
+      currentUserName = user.displayName || user.email;
+      document.getElementById("userName").textContent = currentUserName;
+      document.getElementById("loginScreen").style.display = "none";
+      document.getElementById("appScreen").style.display = "";
+      await loadDeviceInfos();
+      await loadBookings();
+      renderCalendar();
+    } else {
+      currentUser = null;
+      document.getElementById("loginScreen").style.display = "flex";
+      document.getElementById("appScreen").style.display = "none";
+    }
+  });
+
+  // Close modals on overlay click
+  document.getElementById("bookingModal").addEventListener("click", function(e) {
+    if (e.target === this) closeModal();
+  });
+  document.getElementById("deviceModal").addEventListener("click", function(e) {
+    if (e.target === this) closeDeviceModal();
+  });
+</script>
+</body>
+</html>
