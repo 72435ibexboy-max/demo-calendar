@@ -45,12 +45,12 @@
     tbody tr:nth-child(even) { background: white; }
     tbody tr:hover { background: var(--primary-light); }
     td { border: 1px solid var(--border); padding: 0; vertical-align: middle; }
-    td:first-child { position: sticky; left: 0; z-index: 5; background: white; min-width: 72px; width: 72px; max-width: 72px; }
+    td:first-child { position: sticky; left: 0; z-index: 5; background: white; min-width: 72px; width: 72px; max-width: 72px; overflow: hidden; }
     tr:nth-child(odd) td:first-child { background: #fafbff; }
     tr:nth-child(even) td:first-child { background: white; }
     tr:hover td:first-child { background: var(--primary-light); }
-    .device-name { padding: 4px 4px; font-size: 10px; font-weight: 700; white-space: nowrap; display: flex; align-items: center; gap: 2px; }
-    .info-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; padding: 1px; line-height: 1; }
+    .device-name { padding: 4px 4px; font-size: 10px; font-weight: 700; line-height: 1.3; white-space: normal; word-break: break-all; overflow-wrap: anywhere; }
+    .info-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; padding: 0; margin-left: 2px; line-height: 1; vertical-align: middle; display: inline-block; }
     .slot { min-height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: background 0.15s; position: relative; }
     .slot:hover { background: #d0e0fc; }
     .slot.booked { background: #fee2e2; }
@@ -212,7 +212,8 @@
     DEVICES.forEach(device=>{
       const tr=document.createElement("tr");
       const devEsc=device.replace(/'/g,"\\'");
-      let row=`<td><div class="device-name">${device}<button class="info-btn" onclick="openDev('${devEsc}')">ℹ️</button></div></td>`;
+      const dispDevice=device.replace(/([＋+])/g,"$1<br>");
+      let row=`<td><div class="device-name">${dispDevice}<button class="info-btn" onclick="openDev('${devEsc}')">ℹ️</button></div></td>`;
       days.forEach(d=>{
         const dateStr=fmt(d);
         ["AM","PM"].forEach(ampm=>{
