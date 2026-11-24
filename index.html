@@ -37,27 +37,39 @@
     #weekLabel { font-size: 14px; font-weight: 700; }
     #todayBtn { background: var(--primary); color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; }
     .calendar-wrap { overflow-x: auto; padding: 10px; }
-    table { width: 100%; border-collapse: collapse; min-width: 400px; }
+    table { width: 100%; border-collapse: collapse; min-width: 640px; table-layout: fixed; }
     thead th { background: var(--primary); color: white; padding: 7px 4px; font-size: 11px; font-weight: 700; text-align: center; }
-    thead th.device-col { text-align: left; padding-left: 6px; min-width: 72px; width: 72px; max-width: 72px; background: #0f3a9e; position: sticky; left: 0; z-index: 10; }
+    thead th.device-col { text-align: left; padding-left: 8px; min-width: 124px; width: 124px; max-width: 124px; background: #0f3a9e; position: sticky; left: 0; z-index: 10; }
     thead th.today-col { background: #1a3fa8; }
-    tbody tr:nth-child(odd) { background: #fafbff; }
-    tbody tr:nth-child(even) { background: white; }
-    tbody tr:hover { background: var(--primary-light); }
+    /* 機器グループごとに背景色を交互に（紐づく行は同じ色） */
+    tbody tr.g0 td { background: #ffffff; }
+    tbody tr.g1 td { background: #ffffff; }
+    tbody tr:hover td { background: var(--primary-light); }
+    tbody tr.parent td { border-top: 2px solid #cbd5e1; }
+    tbody tr.child td { border-top: 1px dashed #e2e8f0; }
+    tbody tr.has-children td:first-child { border-left: 4px solid var(--primary); }
+    tbody tr.child td:first-child { border-left: 4px solid #bfdbfe; background: #f8fafc; }
     td { border: 1px solid var(--border); padding: 0; vertical-align: middle; }
-    td:first-child { position: sticky; left: 0; z-index: 5; background: white; min-width: 72px; width: 72px; max-width: 72px; overflow: hidden; }
-    tr:nth-child(odd) td:first-child { background: #fafbff; }
-    tr:nth-child(even) td:first-child { background: white; }
-    tr:hover td:first-child { background: var(--primary-light); }
-    .device-name { padding: 4px 4px; font-size: 10px; font-weight: 700; line-height: 1.3; white-space: normal; word-break: break-all; overflow-wrap: anywhere; }
-    .info-btn { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 11px; padding: 0; margin-left: 2px; line-height: 1; vertical-align: middle; display: inline-block; }
-    .slot { min-height: 40px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: background 0.15s; position: relative; }
+    td:first-child { position: sticky; left: 0; z-index: 5; min-width: 124px; width: 124px; max-width: 124px; overflow: hidden; }
+    /* 日付の区切りを太く */
+    th.day-start, td.day-start { border-left: 2px solid #94a3b8; }
+    thead th.day-start { border-left: 2px solid #0f3a9e; }
+    /* 今日の列をうっすら黄色に */
+    tbody tr td.today-cell { background: #fffbea; }
+    tbody tr:hover td.today-cell { background: var(--primary-light); }
+    .device-name { padding: 6px 8px; font-size: 12px; font-weight: 700; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: space-between; gap: 2px; }
+    .device-name.child { padding: 3px 8px 3px 14px; font-size: 11px; font-weight: 500; color: var(--text-muted); }
+    .info-btn { background: none; border: none; cursor: pointer; color: #cbd5e1; font-size: 12px; padding: 0 2px; line-height: 1; flex-shrink: 0; }
+    .info-btn:hover { color: var(--primary); }
+    .slot { min-height: 36px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 4px; transition: background 0.15s; position: relative; }
     .slot:hover { background: #d0e0fc; }
-    .slot.booked { background: #fee2e2; }
-    .slot.booked:hover { background: #fecaca; }
+    tr.child .slot { min-height: 28px; }
+    .slot.booked { background: transparent; }
+    .slot.booked:hover { background: #d0e0fc; }
     .slot-label { position: absolute; top: 2px; left: 3px; font-size: 8px; color: var(--text-muted); font-weight: 700; }
-    .slot-text { font-size: 11px; font-weight: 600; color: var(--danger); text-align: center; word-break: break-all; }
-    .slot.empty .slot-text { color: #b0bec5; font-weight: 400; font-size: 14px; }
+    .slot-text { font-size: 11px; font-weight: 700; color: #9b1c1c; background: #fde2e2; border-radius: 4px; padding: 2px 4px; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .slot.empty .slot-text { display: none; }
+    .slot.empty:hover::after { content: '+'; color: var(--primary); font-size: 16px; }
     .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: flex-end; justify-content: center; }
     .modal-overlay.active { display: flex; }
     .modal { background: white; border-radius: 20px 20px 0 0; padding: 24px 20px 36px; width: 100%; max-width: 480px; animation: slideUp 0.22s ease; }
@@ -144,6 +156,7 @@
 </div>
 
 <script>
+  /* ===== FIREBASE-START（この区間はFirebaseへの接続設定です。変更しないでください） ===== */
   const firebaseConfig = {
     apiKey: "AIzaSyB1RkuJyX7A2WTepnUT1yTCkrfXaNFvGI8",
     authDomain: "fir-calendar-e69e3.firebaseapp.com",
@@ -155,19 +168,61 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
+  /* ===== FIREBASE-END ===== */
 
-  const DEVICES = [
-  "デスクトップ＋ハンディ①","デスクトップ＋ハンディ②","ノート＋ハンディ③","IR90","IR70",
-  "G-stepEX9","EX9仮想1","EX9仮想2","EX9仮想3","EX9仮想4","EX9仮想5",
-  "G-stepEX7","EX7仮想1","EX7仮想2","G-stepEX5","G-stepEX3","G-stepEX1",
-  "LibertyEX300","LibertyEX200","LibertyEX100",
-  "マルチモニター"
+  /* =====================================================================
+     デモ機一覧
+     ・行の並び順や表示名は自由に変えてOKです。
+     ・key（"dev0" など）は予約データの保存先です。【絶対に変更・使い回ししないでください】
+       変えると、その機器の過去の予約が表示されなくなります。
+     ・infoId はシリアル番号・備考の保存先です。これも変更しないでください。
+       （省略した場合は表示名がそのまま使われます）
+     ・新しい機器を追加するときは、まだ使っていない key（dev30, dev31 …）を付けてください。
+     ・使用済みで今は表示していない key：dev9, dev10（旧EX9仮想4・5）, dev13（旧EX7仮想2）
+       → 予約データが残っているので、新しい機器には使わないでください。
+     ===================================================================== */
+  const DEVICE_TREE = [
+    { key:"dev0",  name:"WORK15①", infoId:"デスクトップ＋ハンディ①", children:[ {key:"dev21", name:"ハンディ"} ] },
+    { key:"dev1",  name:"WORK15②", infoId:"デスクトップ＋ハンディ②", children:[ {key:"dev22", name:"ハンディ"} ] },
+    { key:"dev2",  name:"NOTE15",  infoId:"ノート＋ハンディ③",       children:[ {key:"dev23", name:"ハンディ"} ] },
+    { key:"dev3",  name:"IR90" },
+    { key:"dev4",  name:"IR70" },
+    { key:"dev5",  name:"G-stepEX9", children:[
+        {key:"dev6", name:"仮想1", infoId:"EX9仮想1"},
+        {key:"dev7", name:"仮想2", infoId:"EX9仮想2"},
+        {key:"dev8", name:"仮想3", infoId:"EX9仮想3"} ] },
+    { key:"dev11", name:"G-stepEX7",    children:[ {key:"dev12", name:"仮想", infoId:"EX7仮想1"} ] },
+    { key:"dev14", name:"G-stepEX5",    children:[ {key:"dev24", name:"仮想"} ] },
+    { key:"dev15", name:"G-stepEX3",    children:[ {key:"dev25", name:"仮想"} ] },
+    { key:"dev16", name:"G-stepEX1",    children:[ {key:"dev26", name:"仮想"} ] },
+    { key:"dev17", name:"LibertyEX300", children:[ {key:"dev27", name:"仮想"} ] },
+    { key:"dev18", name:"LibertyEX200", children:[ {key:"dev28", name:"仮想"} ] },
+    { key:"dev19", name:"LibertyEX100", children:[ {key:"dev29", name:"仮想"} ] },
+    { key:"dev20", name:"マルチモニター" }
   ];
+
+  // 一覧を表示用の1行ずつのリストに展開
+  const DEVICES = [];
+  DEVICE_TREE.forEach((p, gi) => {
+    const kids = p.children || [];
+    DEVICES.push({ key:p.key, label:p.name, fullName:p.name, infoId:p.infoId||p.name, group:gi, isChild:false, hasChildren:kids.length>0 });
+    kids.forEach(c => {
+      const full = p.name + " " + c.name;
+      DEVICES.push({ key:c.key, label:c.name, fullName:full, infoId:c.infoId||full, group:gi, isChild:true, hasChildren:false });
+    });
+  });
+  const DEVICE_BY_KEY = Object.fromEntries(DEVICES.map(d => [d.key, d]));
+
+  // 旧「PC＋ハンディ」セット予約を、ハンディ側にも1回だけコピーするための設定
+  const HANDY_COPY = { dev0:"dev21", dev1:"dev22", dev2:"dev23" };
+  const HANDY_COPY_DONE = "_migration_handy_v1"; // devicesコレクション内の「コピー済み」目印
+
   const QUICK_OPTS = ["講習","展示会","外部貸出","メンテナンス"];
   const DAY_JP = ["日","月","火","水","木","金","土"];
   let currentUser=null, currentUserName="", weekOffset=0;
   let bookings={}, deviceInfos={}, currentSlot=null, currentDev=null;
 
+  function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
   function getMonday(offset) {
     const now=new Date(), d=now.getDay(), diff=d===0?-6:1-d, mon=new Date(now);
     mon.setDate(now.getDate()+diff+offset*7); mon.setHours(0,0,0,0); return mon;
@@ -178,16 +233,33 @@
   }
   function fmt(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
   function isToday(d){return d.toDateString()===new Date().toDateString();}
-  function slotId(device, date, ampm) {
-    const idx = DEVICES.indexOf(device);
-    const devKey = idx >= 0 ? 'dev' + idx : encodeURIComponent(device).replace(/%/g,'X');
-    return devKey + '__' + date + '__' + ampm;
+  function slotId(key, date, ampm) { return key + '__' + date + '__' + ampm; }
+
+  // 旧セット予約をハンディ側へコピー（全体で1回だけ実行。既にハンディ側に予約がある枠は上書きしない）
+  async function copyHandyOnce(snap) {
+    if (deviceInfos[HANDY_COPY_DONE]) return false;
+    const ids = new Set(); snap.forEach(doc => ids.add(doc.id));
+    const jobs = [];
+    snap.forEach(doc => {
+      const [devKey, date, ampm] = doc.id.split('__');
+      const to = HANDY_COPY[devKey]; if (!to) return;
+      const newId = slotId(to, date, ampm); if (ids.has(newId)) return;
+      const d = doc.data();
+      const data = { device: DEVICE_BY_KEY[to].fullName, date: d.date, ampm: d.ampm, name: d.name, uid: d.uid, copiedFrom: doc.id };
+      const ref = db.collection("bookings").doc(newId);
+      jobs.push(ref.set(data).catch(() => ref.set({ ...data, uid: currentUser.uid })));
+    });
+    await Promise.all(jobs);
+    const mark = { doneAt: new Date().toISOString(), by: currentUser.uid, copied: jobs.length };
+    try { await db.collection("devices").doc(HANDY_COPY_DONE).set(mark); deviceInfos[HANDY_COPY_DONE] = mark; } catch(e) { console.warn(e); }
+    return jobs.length > 0;
   }
 
   async function loadBookings() {
     const days=getWeekDays(weekOffset), start=fmt(days[0]), end=fmt(days[4]);
+    let snap=await db.collection("bookings").get();
+    try { if (await copyHandyOnce(snap)) snap=await db.collection("bookings").get(); } catch(e) { console.warn(e); }
     bookings={};
-    const snap=await db.collection("bookings").get();
     snap.forEach(doc=>{const d=doc.data();if(d.date>=start&&d.date<=end)bookings[doc.id]=d;});
   }
   async function loadDeviceInfos() {
@@ -202,23 +274,24 @@
     const head=document.getElementById("calHead");
     head.innerHTML="";
     const tr1=document.createElement("tr");
-    tr1.innerHTML='<th class="device-col">デモ機</th>'+days.map(d=>`<th class="${isToday(d)?'today-col':''}" colspan="2">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})</th>`).join("");
+    tr1.innerHTML='<th class="device-col">デモ機</th>'+days.map(d=>`<th class="day-start ${isToday(d)?'today-col':''}" colspan="2">${d.getMonth()+1}/${d.getDate()}(${DAY_JP[d.getDay()]})</th>`).join("");
     head.appendChild(tr1);
     const tr2=document.createElement("tr");
-    tr2.innerHTML='<th class="device-col" style="font-size:9px;"></th>'+days.map(d=>`<th class="${isToday(d)?'today-col':''}" style="font-size:9px;">午前</th><th class="${isToday(d)?'today-col':''}" style="font-size:9px;">午後</th>`).join("");
+    tr2.innerHTML='<th class="device-col" style="font-size:9px;"></th>'+days.map(d=>`<th class="day-start ${isToday(d)?'today-col':''}" style="font-size:9px;">午前</th><th class="${isToday(d)?'today-col':''}" style="font-size:9px;">午後</th>`).join("");
     head.appendChild(tr2);
     const body=document.getElementById("calBody");
     body.innerHTML="";
-    DEVICES.forEach(device=>{
+    DEVICES.forEach(dev=>{
       const tr=document.createElement("tr");
-      const devEsc=device.replace(/'/g,"\\'");
-      const dispDevice=device.replace(/([＋+])/g,"$1<br>");
-      let row=`<td><div class="device-name">${dispDevice}<button class="info-btn" onclick="openDev('${devEsc}')">ℹ️</button></div></td>`;
+      tr.className="g"+(dev.group%2)+(dev.isChild?" child":" parent")+(dev.hasChildren?" has-children":"");
+      const label=dev.isChild ? "└ "+esc(dev.label) : esc(dev.label);
+      let row=`<td><div class="device-name${dev.isChild?' child':''}" title="${esc(dev.fullName)}"><span>${label}</span><button class="info-btn" onclick="openDev('${dev.key}')">ℹ️</button></div></td>`;
       days.forEach(d=>{
         const dateStr=fmt(d);
         ["AM","PM"].forEach(ampm=>{
-          const key=slotId(device,dateStr,ampm), b=bookings[key], name=b?b.name:"";
-          row+=`<td><div class="slot ${name?'booked':'empty'}" onclick="openBook('${devEsc}','${dateStr}','${ampm}')"><span class="slot-label">${ampm==="AM"?"午前":"午後"}</span><span class="slot-text">${name||"+"}</span></div></td>`;
+          const b=bookings[slotId(dev.key,dateStr,ampm)], name=b?b.name:"";
+          const cls=(ampm==="AM"?"day-start ":"")+(isToday(d)?"today-cell":"");
+          row+=`<td class="${cls}"><div class="slot ${name?'booked':'empty'}" title="${name?esc(name):''}" onclick="openBook('${dev.key}','${dateStr}','${ampm}')"><span class="slot-text">${name?esc(name):""}</span></div></td>`;
         });
       });
       tr.innerHTML=row; body.appendChild(tr);
@@ -227,10 +300,10 @@
     document.getElementById("calTable").style.display="";
   }
 
-  function openBook(device,date,ampm) {
-    currentSlot={device,date,ampm};
-    const key=slotId(device,date,ampm), b=bookings[key], d=new Date(date+"T00:00:00");
-    document.getElementById("bookTitle").textContent=device+" ― "+(ampm==="AM"?"午前":"午後");
+  function openBook(key,date,ampm) {
+    currentSlot={key,date,ampm};
+    const dev=DEVICE_BY_KEY[key], b=bookings[slotId(key,date,ampm)], d=new Date(date+"T00:00:00");
+    document.getElementById("bookTitle").textContent=dev.fullName+" ― "+(ampm==="AM"?"午前":"午後");
     document.getElementById("bookSub").textContent=(d.getMonth()+1)+"/"+d.getDate()+"（"+DAY_JP[d.getDay()]+"）";
     document.getElementById("bookName").value=b?b.name:currentUserName;
     document.getElementById("delBtn").style.display=b?"":"none";
@@ -246,20 +319,21 @@
   async function doSave(){
     const name=document.getElementById("bookName").value.trim();
     if(!name){alert("名前または用途を入力してください");return;}
-    const {device,date,ampm}=currentSlot;
-    await db.collection("bookings").doc(slotId(device,date,ampm)).set({device,date,ampm,name,uid:currentUser.uid});
+    const {key,date,ampm}=currentSlot;
+    await db.collection("bookings").doc(slotId(key,date,ampm)).set({device:DEVICE_BY_KEY[key].fullName,date,ampm,name,uid:currentUser.uid});
     closeBook(); await loadBookings(); renderCalendar();
   }
   async function doDelete(){
     if(!confirm("予約を削除しますか？"))return;
-    const {device,date,ampm}=currentSlot;
-    await db.collection("bookings").doc(slotId(device,date,ampm)).delete();
+    const {key,date,ampm}=currentSlot;
+    await db.collection("bookings").doc(slotId(key,date,ampm)).delete();
     closeBook(); await loadBookings(); renderCalendar();
   }
-  function openDev(device){
-    currentDev=device;
-    document.getElementById("devModalTitle").textContent="📦 "+device;
-    const info=deviceInfos[device]||{};
+  function openDev(key){
+    const dev=DEVICE_BY_KEY[key];
+    currentDev=dev.infoId;
+    document.getElementById("devModalTitle").textContent="📦 "+dev.fullName;
+    const info=deviceInfos[dev.infoId]||{};
     document.getElementById("devSerial").value=info.serial||"";
     document.getElementById("devExcel").value=info.excel||"";
     document.getElementById("devNote").value=info.note||"";
@@ -305,7 +379,7 @@
       document.getElementById("loginScreen").style.display="none";
       document.getElementById("appScreen").style.display="block";
       try{await loadDeviceInfos(); await loadBookings(); renderCalendar();}
-      catch(e){document.getElementById("loadingMsg").innerHTML='<p style="color:red">エラー: '+e.message+'</p>';}
+      catch(e){document.getElementById("loadingMsg").innerHTML='<p style="color:red">エラー: '+esc(e.message)+'</p>';}
     } else {
       currentUser=null;
       document.getElementById("loginScreen").style.display="flex";
